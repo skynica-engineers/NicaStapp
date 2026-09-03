@@ -1,0 +1,301 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model AuthUser {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email        String    @unique @db.VarChar(255)
+  passwordHash String    @map("password_hash") @db.VarChar(255)
+  createdAt    DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+
+  @@map("auth_users")
+}
+
+model Perfil {
+  id                    String                  @id @db.Uuid
+  nombreCompleto        String                  @map("nombre_completo") @db.VarChar(150)
+  telefono              String?                 @db.VarChar(20)
+  avatarUrl             String?                 @map("avatar_url")
+  municipioId           Int                     @map("municipio_id")
+  verificado            Boolean                 @default(false)
+  createdAt             DateTime?               @default(now()) @map("created_at") @db.Timestamp(6)
+  acreditaciones_mesa   acreditaciones_mesa[]
+  encuentros            encuentros[]
+  equipos               equipos[]
+  organizacion_miembros organizacion_miembros[]
+  organizaciones        organizaciones[]
+  municipio             Municipio               @relation(fields: [municipioId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@map("perfiles")
+}
+
+model Departamento {
+  id         Int         @id @default(autoincrement())
+  nombre     String      @unique @db.VarChar(50)
+  createdAt  DateTime?   @default(now()) @map("created_at") @db.Timestamp(6)
+  municipios Municipio[]
+
+  @@map("departamentos")
+}
+
+model Municipio {
+  id             Int              @id @default(autoincrement())
+  departamentoId Int              @map("departamento_id")
+  nombre         String           @db.VarChar(50)
+  createdAt      DateTime?        @default(now()) @map("created_at") @db.Timestamp(6)
+  comunidades    comunidades[]
+  departamento   Departamento     @relation(fields: [departamentoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  organizaciones organizaciones[]
+  perfiles       Perfil[]
+  equipos        equipos[]
+
+  @@map("municipios")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model acreditaciones_mesa {
+  id                String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  perfil_id         String         @db.Uuid
+  organizacion_id   String         @db.Uuid
+  torneo_id         String?        @db.Uuid
+  deporte_id        Int
+  rol_acreditacion  String         @default("anotador") @db.VarChar(30)
+  estado_aprobacion String         @default("pendiente") @db.VarChar(20)
+  fecha_emision     DateTime?      @default(now()) @db.Timestamp(6)
+  deportes          deportes       @relation(fields: [deporte_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  organizaciones    organizaciones @relation(fields: [organizacion_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  perfiles          Perfil         @relation(fields: [perfil_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  torneos           torneos?       @relation(fields: [torneo_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model atletas {
+  id                         String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre_completo            String                       @db.VarChar(150)
+  identificacion             String?                      @db.VarChar(50)
+  equipo_id                  String?                      @db.Uuid
+  perfil_id                  String?                      @unique @db.Uuid
+  created_at                 DateTime?                    @default(now()) @db.Timestamp(6)
+  equipos                    equipos?                     @relation(fields: [equipo_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  competidores_encuentro     competidores_encuentro[]
+  participantes_acta         participantes_acta[]
+  torneo_inscripciones       torneo_inscripciones[]
+  valores_metricas_encuentro valores_metricas_encuentro[]
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model competidores_encuentro {
+  id                    String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  encuentro_id          String               @db.Uuid
+  equipo_id             String?              @db.Uuid
+  atleta_id             String?              @db.Uuid
+  rol_posicion_etiqueta String?              @db.VarChar(50)
+  puntuacion_final      Decimal?             @default(0) @db.Decimal(10, 2)
+  es_ganador            Boolean?             @default(false)
+  atletas               atletas?             @relation(fields: [atleta_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  encuentros            encuentros           @relation(fields: [encuentro_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  equipos               equipos?             @relation(fields: [equipo_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  participantes_acta    participantes_acta[]
+  periodos_marcador     periodos_marcador[]
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model comunicados {
+  id                String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizacion_id   String         @db.Uuid
+  torneo_id         String?        @db.Uuid
+  titulo            String         @db.VarChar(200)
+  contenido         String
+  tipo_aviso        String         @db.VarChar(50)
+  fecha_publicacion DateTime?      @default(now()) @db.Timestamp(6)
+  organizaciones    organizaciones @relation(fields: [organizacion_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  torneos           torneos?       @relation(fields: [torneo_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model comunidades {
+  id           Int       @id @default(autoincrement())
+  municipio_id Int
+  nombre       String    @db.VarChar(100)
+  created_at   DateTime? @default(now()) @db.Timestamp(6)
+  municipios   Municipio @relation(fields: [municipio_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model deportes {
+  id                  Int                   @id @default(autoincrement())
+  nombre              String                @unique @db.VarChar(50)
+  codigo_clave        String                @unique @db.VarChar(20)
+  tipo_competencia    String                @db.VarChar(30)
+  acreditaciones_mesa acreditaciones_mesa[]
+  equipos             equipos[]
+  metricas_catalogo   metricas_catalogo[]
+  torneos             torneos[]
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model encuentros {
+  id                         String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  torneo_id                  String                       @db.Uuid
+  anotador_id                String                       @db.Uuid
+  fecha_hora                 DateTime                     @db.Timestamp(6)
+  sede_instalacion           String                       @db.VarChar(150)
+  estado_encuentro           String                       @default("programado") @db.VarChar(30)
+  transmision_url            String?
+  created_at                 DateTime?                    @default(now()) @db.Timestamp(6)
+  competidores_encuentro     competidores_encuentro[]
+  perfiles                   Perfil                       @relation(fields: [anotador_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  torneos                    torneos                      @relation(fields: [torneo_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  valores_metricas_encuentro valores_metricas_encuentro[]
+}
+
+/// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model equipos {
+  id                     String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre                 String                   @db.VarChar(100)
+  deporte_id             Int
+  municipio_id           Int
+  administrador_id       String                   @db.Uuid
+  created_at             DateTime?                @default(now()) @db.Timestamp(6)
+  atletas                atletas[]
+  competidores_encuentro competidores_encuentro[]
+  perfiles               Perfil                   @relation(fields: [administrador_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  municipios             Municipio                @relation(fields: [municipio_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  deportes               deportes                 @relation(fields: [deporte_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  torneo_inscripciones   torneo_inscripciones[]
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model metricas_catalogo {
+  id                         Int                          @id @default(autoincrement())
+  deporte_id                 Int
+  clave_metrica              String                       @db.VarChar(30)
+  nombre_visible             String                       @db.VarChar(100)
+  tipo_dato                  String                       @db.VarChar(20)
+  ambito                     String                       @db.VarChar(30)
+  deportes                   deportes                     @relation(fields: [deporte_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  valores_metricas_encuentro valores_metricas_encuentro[]
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model organizacion_miembros {
+  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizacion_id String         @db.Uuid
+  perfil_id       String         @db.Uuid
+  rol_interno     String         @db.VarChar(50)
+  created_at      DateTime?      @default(now()) @db.Timestamp(6)
+  organizaciones  organizaciones @relation(fields: [organizacion_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  perfiles        Perfil         @relation(fields: [perfil_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model organizaciones {
+  id                    String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre                String                  @db.VarChar(150)
+  tipo_institucion      String                  @db.VarChar(50)
+  municipio_id          Int
+  creador_id            String                  @db.Uuid
+  created_at            DateTime?               @default(now()) @db.Timestamp(6)
+  acreditaciones_mesa   acreditaciones_mesa[]
+  comunicados           comunicados[]
+  organizacion_miembros organizacion_miembros[]
+  perfiles              Perfil                  @relation(fields: [creador_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  municipios            Municipio               @relation(fields: [municipio_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  torneos               torneos[]
+}
+
+/// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model participantes_acta {
+  id                      String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  competidor_encuentro_id String                 @db.Uuid
+  atleta_id               String                 @db.Uuid
+  posicion_rol            String?                @db.VarChar(50)
+  es_titular              Boolean?               @default(true)
+  atletas                 atletas                @relation(fields: [atleta_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  competidores_encuentro  competidores_encuentro @relation(fields: [competidor_encuentro_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model periodos_marcador {
+  id                      String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  competidor_encuentro_id String                 @db.Uuid
+  numero_periodo          Int
+  puntos_acumulados       Decimal?               @default(0) @db.Decimal(10, 2)
+  competidores_encuentro  competidores_encuentro @relation(fields: [competidor_encuentro_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model torneo_inscripciones {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  torneo_id          String    @db.Uuid
+  equipo_id          String?   @db.Uuid
+  atleta_id          String?   @db.Uuid
+  estado_inscripcion String    @default("aprobado") @db.VarChar(20)
+  created_at         DateTime? @default(now()) @db.Timestamp(6)
+  atletas            atletas?  @relation(fields: [atleta_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  equipos            equipos?  @relation(fields: [equipo_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  torneos            torneos   @relation(fields: [torneo_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model torneos {
+  id                    String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre                String                 @db.VarChar(150)
+  categoria_territorial String                 @db.VarChar(50)
+  deporte_id            Int
+  organizacion_id       String                 @db.Uuid
+  temporada             String                 @db.VarChar(20)
+  estado                String                 @default("en_curso") @db.VarChar(20)
+  created_at            DateTime?              @default(now()) @db.Timestamp(6)
+  acreditaciones_mesa   acreditaciones_mesa[]
+  encuentros            encuentros[]
+  torneo_inscripciones  torneo_inscripciones[]
+  comunicados           comunicados[]
+  deportes              deportes               @relation(fields: [deporte_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  organizaciones        organizaciones         @relation(fields: [organizacion_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model valores_metricas_encuentro {
+  id                String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  encuentro_id      String            @db.Uuid
+  atleta_id         String            @db.Uuid
+  metrica_id        Int
+  valor_registrado  Decimal           @db.Decimal(10, 2)
+  created_at        DateTime?         @default(now()) @db.Timestamp(6)
+  atletas           atletas           @relation(fields: [atleta_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  encuentros        encuentros        @relation(fields: [encuentro_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  metricas_catalogo metricas_catalogo @relation(fields: [metrica_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
