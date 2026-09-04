@@ -15,6 +15,17 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      res.status(400).json({ error: 'El formato del correo electrónico no es válido' });
+      return;
+    }
+
+    if (password.length < 6) {
+      res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+      return;
+    }
+
     // Check if user already exists
     const existingUser = await prisma.authUser.findUnique({ where: { email } });
     if (existingUser) {

@@ -12,6 +12,8 @@ import encuentrosRoutes from './routes/encuentrosRoutes';
 import perfilRoutes from './routes/perfilRoutes';
 import metricasRoutes from './routes/metricasRoutes';
 import equiposRoutes from './routes/equiposRoutes';
+import atletasRoutes from './routes/atletasRoutes';
+import { authenticateToken } from './middlewares/authMiddleware';
 
 // Load environment variables
 dotenv.config();
@@ -29,17 +31,20 @@ app.use((req, res, next) => {
   next();
 });
 
-// Rutas
+// Rutas Públicas
 app.use('/api/auth', authRoutes);
 app.use('/api/catalog', catalogRoutes);
 app.use('/api/feed', feedRoutes);
-app.use('/api/deportes', deportesRoutes);
-app.use('/api/torneos', torneosRoutes);
-app.use('/api/organizaciones', organizacionesRoutes);
-app.use('/api/encuentros', encuentrosRoutes);
-app.use('/api/perfiles', perfilRoutes);
-app.use('/api/metricas', metricasRoutes);
-app.use('/api/equipos', equiposRoutes);
+
+// Rutas Privadas (Requieren Token)
+app.use('/api/deportes', authenticateToken, deportesRoutes);
+app.use('/api/torneos', authenticateToken, torneosRoutes);
+app.use('/api/organizaciones', authenticateToken, organizacionesRoutes);
+app.use('/api/encuentros', authenticateToken, encuentrosRoutes);
+app.use('/api/perfiles', authenticateToken, perfilRoutes);
+app.use('/api/metricas', authenticateToken, metricasRoutes);
+app.use('/api/equipos', authenticateToken, equiposRoutes);
+app.use('/api/atletas', authenticateToken, atletasRoutes);
 
 // Health check endpoint
 app.get('/', (req, res) => {

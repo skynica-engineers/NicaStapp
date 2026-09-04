@@ -4,7 +4,18 @@ import { prisma } from '../config/db';
 export const getTorneos = async (req: Request, res: Response): Promise<void> => {
   try {
     const torneos = await prisma.torneos.findMany({
-      include: { deportes: true },
+      include: { 
+        deportes: true,
+        organizaciones: {
+          include: {
+            municipios: {
+              include: {
+                departamento: true
+              }
+            }
+          }
+        }
+      },
       orderBy: { created_at: 'desc' }
     });
     res.status(200).json(torneos);
@@ -145,7 +156,8 @@ export const getTorneoTablas = async (req: Request, res: Response): Promise<void
             competidores_encuentro: {
               include: {
                 equipos: true,
-                atletas: true
+                atletas: true,
+                periodos_marcador: true
               }
             },
             valores_metricas_encuentro: true

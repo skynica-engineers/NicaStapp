@@ -1,7 +1,10 @@
 import { Router } from 'express';
-import { getEncuentrosByTorneo, createEncuentro, getMisAsignacionesTecnico, finalizarEncuentro, getEncuentroById } from '../controllers/encuentrosController';
+import { getEncuentrosByTorneo, createEncuentro, getMisAsignacionesTecnico, finalizarEncuentro, getEncuentroById, getAllEncuentros } from '../controllers/encuentrosController';
 
 const router = Router();
+
+// Obtener todos los encuentros globales
+router.get('/all', getAllEncuentros);
 
 // Obtener los encuentros de un torneo
 router.get('/torneo/:torneoId', getEncuentrosByTorneo);
