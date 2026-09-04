@@ -2,12 +2,12 @@ import { Request, Response } from 'express';
 import { prisma } from '../config/db';
 
 export const getMetricasByDeporte = async (req: Request, res: Response): Promise<void> => {
-  const { deporteId } = req.params;
-
   try {
+    const id = String(req.params.deporteId);
+
     const metricas = await prisma.metricas_catalogo.findMany({
       where: {
-        deporte_id: parseInt(deporteId, 10)
+        deporte_id: parseInt(id, 10)
       },
       orderBy: {
         id: 'asc'

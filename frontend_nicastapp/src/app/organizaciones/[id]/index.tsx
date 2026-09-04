@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useLocalSearchParams, router, useFocusEffect } from 'expo-router';
@@ -70,11 +71,19 @@ export default function OrganizacionDashboard() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Feather name="arrow-left" size={24} color={COLORS.textDark} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Panel de Control</Text>
+        <View style={styles.logoContainer}>
+          <Image 
+            source={require('../../../../assets/images/LogoSinFondo.png')} 
+            style={{ width: 32, height: 32 }} 
+            contentFit="contain" 
+          />
+          <Text style={styles.logoText}>NICASTAPP</Text>
+        </View>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.screenTitle}>Panel de Control</Text>
         {/* Premium Org Hero Card */}
         <LinearGradient 
           colors={['#0F3D91', '#2862CD']} 
@@ -151,9 +160,11 @@ export default function OrganizacionDashboard() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: COLORS.background },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.border },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16, backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.border },
   backBtn: { padding: 4 },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: COLORS.textDark, flex: 1, textAlign: 'center', marginHorizontal: 12 },
+  logoContainer: { flexDirection: 'row', alignItems: 'center', flex: 1, marginLeft: 12 },
+  logoText: { fontSize: 16, fontWeight: '800', color: COLORS.primary, marginLeft: 8, letterSpacing: 0.5 },
+  screenTitle: { fontSize: 24, fontWeight: '700', color: COLORS.textDark, marginBottom: 16 },
   container: { padding: 20, paddingBottom: 100 },
   
   heroCard: { padding: 20, borderRadius: 20, marginBottom: 28, shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 8 },

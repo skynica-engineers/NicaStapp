@@ -28,9 +28,10 @@ model Perfil {
   acreditaciones_mesa   acreditaciones_mesa[]
   encuentros            encuentros[]
   equipos               equipos[]
-  organizacion_miembros organizacion_miembros[]
-  organizaciones        organizaciones[]
-  municipio             Municipio               @relation(fields: [municipioId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  organizacion_miembros          organizacion_miembros[]
+  organizaciones                 organizaciones[]
+  solicitudes_vinculacion_atleta solicitudes_vinculacion_atleta[]
+  municipio                      Municipio               @relation(fields: [municipioId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@map("perfiles")
 }
@@ -88,9 +89,10 @@ model atletas {
   created_at                 DateTime?                    @default(now()) @db.Timestamp(6)
   equipos                    equipos?                     @relation(fields: [equipo_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   competidores_encuentro     competidores_encuentro[]
-  participantes_acta         participantes_acta[]
-  torneo_inscripciones       torneo_inscripciones[]
-  valores_metricas_encuentro valores_metricas_encuentro[]
+  participantes_acta             participantes_acta[]
+  torneo_inscripciones           torneo_inscripciones[]
+  valores_metricas_encuentro     valores_metricas_encuentro[]
+  solicitudes_vinculacion_atleta solicitudes_vinculacion_atleta[]
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -298,4 +300,15 @@ model valores_metricas_encuentro {
   atletas           atletas           @relation(fields: [atleta_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   encuentros        encuentros        @relation(fields: [encuentro_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   metricas_catalogo metricas_catalogo @relation(fields: [metrica_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model solicitudes_vinculacion_atleta {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  atleta_id        String    @db.Uuid
+  perfil_id        String    @db.Uuid
+  estado_solicitud String    @default("pendiente") @db.VarChar(20)
+  created_at       DateTime? @default(now()) @db.Timestamp(6)
+
+  atletas          atletas   @relation(fields: [atleta_id], references: [id], onDelete: Cascade)
+  perfiles         Perfil    @relation(fields: [perfil_id], references: [id], onDelete: Cascade)
 }

@@ -17,7 +17,15 @@ export const getHomeFeed = async (req: Request, res: Response): Promise<void> =>
         },
         competidores_encuentro: {
           include: {
-            equipos: true,
+            equipos: {
+              include: {
+                municipios: {
+                  include: {
+                    departamento: true
+                  }
+                }
+              }
+            },
             atletas: true
           }
         }

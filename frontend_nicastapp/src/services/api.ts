@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
+import { router } from 'expo-router';
 
 const LOCAL_IP = '192.168.123.33';
 const API_URL = `http://${LOCAL_IP}:3000/api`;
@@ -27,7 +28,15 @@ export const apiCall = async (endpoint: string, method: string = 'GET', body?: a
   }
 
   const response = await fetch(url, options);
-  const data = await response.json();
+  const data = await response.json().catch(() => ({}));
+
+  if (response.status === 401) {
+    await AsyncStorage.removeItem('@token');
+    await AsyncStorage.removeItem('@user');
+    router.replace('/login');
+    throw new Error('Sesión expirada. Por favor, inicia sesión nuevamente.');
+  }
+
   if (!response.ok) {
     throw new Error(data.error || 'Error en la petición');
   }
@@ -222,6 +231,10 @@ export const createComunicado = async (orgId: string, data: { titulo: string, co
 // Jornadas / Encuentros (REQ-ORG-05)
 // ==========================================
 
+export const getEncuentrosGlobales = async () => {
+  return await apiCall('/encuentros/all');
+};
+
 export const getMisParticipaciones = async (perfilId: string) => {
   return await apiCall(`/torneos/participacion/${perfilId}`);
 };
@@ -273,6 +286,10 @@ export const getComunidades = async (municipioId: string | number) => {
 // Equipos
 // ==========================================
 
+export const getAllEquipos = async () => {
+  return await apiCall('/equipos/all');
+};
+
 export const createEquipo = async (data: { nombre: string; deporte_id: number; municipio_id: number; administrador_id: string }) => {
   return await apiCall('/equipos', 'POST', data);
 };
@@ -319,4 +336,24 @@ export const solicitarInscripcionTorneo = async (torneoId: string, equipoId: str
 
 export const getTorneosInscritos = async (equipoId: string) => {
   return await apiCall(`/equipos/${equipoId}/torneos-inscritos`);
+};
+
+// ==========================================
+// Atletas (Ficha Digital)
+// ==========================================
+
+export const getAtletaFicha = async (atletaId: string) => {
+  return await apiCall(`/atletas/${atletaId}/ficha`);
+};
+
+export const reclamarFicha = async (atletaId: string, perfilId: string) => {
+  return await apiCall(`/atletas/${atletaId}/reclamar`, 'POST', { perfil_id: perfilId });
+};
+
+export const getSolicitudesVinculacion = async (equipoId: string) => {
+  return await apiCall(`/equipos/${equipoId}/solicitudes-vinculacion`);
+};
+
+export const resolverSolicitudVinculacion = async (equipoId: string, solicitudId: string, estado: 'aprobada' | 'rechazada') => {
+  return await apiCall(`/equipos/${equipoId}/solicitudes-vinculacion/${solicitudId}/estado`, 'PUT', { estado });
 };

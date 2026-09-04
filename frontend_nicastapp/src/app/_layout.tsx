@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import NetInfo from '@react-native-community/netinfo';
 import { OrgProvider } from '../context/OrgContext';
+import { AuthProvider } from '../context/AuthContext';
 import { syncService } from '../services/syncService';
 
 export default function Layout() {
@@ -22,16 +23,18 @@ export default function Layout() {
 
   return (
     <SafeAreaProvider>
-      <OrgProvider>
-        <StatusBar style="dark" />
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="index" />
-          <Stack.Screen name="login" />
-          <Stack.Screen name="register" />
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="(org-tabs)" />
-        </Stack>
-      </OrgProvider>
+      <AuthProvider>
+        <OrgProvider>
+          <StatusBar style="dark" />
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="index" />
+            <Stack.Screen name="login" />
+            <Stack.Screen name="register" />
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="(org-tabs)" />
+          </Stack>
+        </OrgProvider>
+      </AuthProvider>
     </SafeAreaProvider>
   );
 }

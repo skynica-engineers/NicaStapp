@@ -5,8 +5,8 @@ import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiCall } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 // Colors from Palette
 const COLORS = {
   primary: '#0F3D91',
@@ -26,6 +26,7 @@ export default function LoginScreen() {
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const { login } = useAuth();
 
   const handleLogin = async () => {
     let valid = true;
@@ -55,15 +56,13 @@ export default function LoginScreen() {
           password,
         });
         
-        // Save token and user data
-        if (result.token) {
-          await AsyncStorage.setItem('@token', result.token);
-        }
-        if (result.user) {
-          await AsyncStorage.setItem('@user', JSON.stringify(result.user));
+        // Save token and user data via AuthContext
+        if (result.token && result.user) {
+          await login(result.token, result.user);
         }
         
-        // Redirect to Home
+        // Redirect to Home is handled by the AuthContext guard automatically,
+        // but we can enforce it just in case:
         router.replace('/(tabs)');
       } catch (error: any) {
         const errorMsg = error.message || '';

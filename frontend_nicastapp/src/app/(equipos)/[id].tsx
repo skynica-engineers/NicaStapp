@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Modal, TextInput, Alert, FlatList } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
-import { getEquipoById, getEquipoRoster, addAtletaToRoster, removeAtletaFromRoster, searchPerfiles, getTorneosDisponibles, solicitarInscripcionTorneo, getTorneosInscritos } from '../../services/api';
+import { getEquipoById, getEquipoRoster, addAtletaToRoster, removeAtletaFromRoster, searchPerfiles, getTorneosDisponibles, solicitarInscripcionTorneo, getTorneosInscritos, getSolicitudesVinculacion, resolverSolicitudVinculacion } from '../../services/api';
 import { router } from 'expo-router';
 
 const COLORS = {
@@ -21,6 +21,7 @@ export default function EquipoDetalle() {
   const { id } = useLocalSearchParams();
   const [equipo, setEquipo] = useState<any>(null);
   const [roster, setRoster] = useState<any[]>([]);
+  const [solicitudes, setSolicitudes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Modal states
@@ -46,14 +47,16 @@ export default function EquipoDetalle() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [eqRes, rosterRes, torneosRes] = await Promise.all([
+      const [eqRes, rosterRes, torneosRes, solicitudesRes] = await Promise.all([
         getEquipoById(id as string),
         getEquipoRoster(id as string),
-        getTorneosInscritos(id as string)
+        getTorneosInscritos(id as string),
+        getSolicitudesVinculacion(id as string)
       ]);
       setEquipo(eqRes);
       setRoster(rosterRes);
       setTorneosInscritos(torneosRes);
+      setSolicitudes(solicitudesRes);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -149,6 +152,16 @@ export default function EquipoDetalle() {
     }
   };
 
+  const handleResolverSolicitud = async (solicitudId: string, estado: 'aprobada' | 'rechazada') => {
+    try {
+      await resolverSolicitudVinculacion(id as string, solicitudId, estado);
+      fetchData();
+      Alert.alert('Éxito', `Solicitud ${estado} correctamente`);
+    } catch (error) {
+      Alert.alert('Error', 'No se pudo resolver la solicitud');
+    }
+  };
+
   if (loading && !equipo) {
     return (
       <View style={styles.centerContainer}>
@@ -188,9 +201,35 @@ export default function EquipoDetalle() {
             </Text>
           </View>
         </View>
+        
+        {solicitudes.length > 0 && (
+          <>
+            <View style={[styles.rosterHeader, { marginTop: 10 }]}>
+              <Text style={styles.detailTitle}>Solicitudes Pendientes</Text>
+            </View>
+            <View style={styles.rosterList}>
+              {solicitudes.map(sol => (
+                <View key={sol.id} style={styles.solicitudItem}>
+                  <View style={styles.rosterInfo}>
+                    <Text style={styles.rosterName}>{sol.perfiles.nombreCompleto}</Text>
+                    <Text style={styles.rosterTypeNominal}>Reclama ser: {sol.atletas.nombre_completo}</Text>
+                  </View>
+                  <View style={{ flexDirection: 'row' }}>
+                    <TouchableOpacity onPress={() => handleResolverSolicitud(sol.id, 'aprobada')} style={[styles.actionBtn, {backgroundColor: COLORS.success, marginRight: 8}]}>
+                      <Feather name="check" size={16} color={COLORS.white} />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => handleResolverSolicitud(sol.id, 'rechazada')} style={[styles.actionBtn, {backgroundColor: COLORS.error}]}>
+                      <Feather name="x" size={16} color={COLORS.white} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </>
+        )}
 
         {/* Plantilla / Roster */}
-        <View style={styles.rosterHeader}>
+        <View style={[styles.rosterHeader, { marginTop: 24 }]}>
           <Text style={styles.detailTitle}>Plantilla de Jugadores</Text>
           <TouchableOpacity style={styles.addButton} onPress={() => setShowModal(true)}>
             <Feather name="plus" size={16} color={COLORS.white} />
@@ -207,7 +246,11 @@ export default function EquipoDetalle() {
         ) : (
           <View style={styles.rosterList}>
             {roster.map(atleta => (
-              <View key={atleta.id} style={styles.rosterItem}>
+              <TouchableOpacity 
+                key={atleta.id} 
+                style={styles.rosterItem}
+                onPress={() => router.push(`/atleta/${atleta.id}`)}
+              >
                 <View style={styles.rosterAvatar}>
                   <Text style={styles.rosterAvatarText}>{atleta.nombre_completo.charAt(0)}</Text>
                 </View>
@@ -222,7 +265,7 @@ export default function EquipoDetalle() {
                 <TouchableOpacity onPress={() => handleRemoveAtleta(atleta.id, atleta.nombre_completo)} style={styles.removeBtn}>
                   <Feather name="trash-2" size={18} color={COLORS.error} />
                 </TouchableOpacity>
-              </View>
+              </TouchableOpacity>
             ))}
           </View>
         )}
@@ -425,5 +468,7 @@ const styles = StyleSheet.create({
   torneoDesc: { fontSize: 13, color: COLORS.textLight, marginBottom: 2 },
   torneoOrg: { fontSize: 12, color: COLORS.primary, fontWeight: '500' },
   inscribirBtn: { backgroundColor: COLORS.success, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 },
-  inscribirBtnText: { color: COLORS.white, fontWeight: 'bold' }
+  inscribirBtnText: { color: COLORS.white, fontWeight: 'bold' },
+  solicitudItem: { flexDirection: 'row', alignItems: 'center', padding: 12, borderBottomWidth: 1, borderBottomColor: COLORS.border, backgroundColor: '#FFFBEB' },
+  actionBtn: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' }
 });

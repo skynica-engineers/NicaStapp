@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -44,11 +45,19 @@ export default function MyOrganizationsScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Feather name="arrow-left" size={24} color={COLORS.textDark} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Mis Organizaciones</Text>
+        <View style={styles.logoContainer}>
+          <Image 
+            source={require('../../../assets/images/LogoSinFondo.png')} 
+            style={{ width: 32, height: 32 }} 
+            contentFit="contain" 
+          />
+          <Text style={styles.logoText}>NICASTAPP</Text>
+        </View>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView contentContainerStyle={[styles.container, { paddingBottom: insets.bottom + 20 }]}>
+        <Text style={styles.screenTitle}>Mis Organizaciones</Text>
         {isLoading ? (
           <ActivityIndicator color={COLORS.primary} style={{ marginTop: 40 }} />
         ) : organizaciones.length > 0 ? (
@@ -83,9 +92,11 @@ export default function MyOrganizationsScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: COLORS.background },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.border },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16, backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.border },
   backBtn: { padding: 4 },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: COLORS.textDark },
+  logoContainer: { flexDirection: 'row', alignItems: 'center', flex: 1, marginLeft: 12 },
+  logoText: { fontSize: 16, fontWeight: '800', color: COLORS.primary, marginLeft: 8, letterSpacing: 0.5 },
+  screenTitle: { fontSize: 24, fontWeight: '700', color: COLORS.textDark, marginBottom: 20 },
   container: { padding: 20 },
   orgCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.white, padding: 16, borderRadius: 16, borderWidth: 1, borderColor: COLORS.border, marginBottom: 12 },
   orgIconContainer: { width: 56, height: 56, borderRadius: 12, backgroundColor: '#F1F5F9', justifyContent: 'center', alignItems: 'center', marginRight: 16 },

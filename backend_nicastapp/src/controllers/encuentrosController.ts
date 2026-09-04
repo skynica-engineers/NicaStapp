@@ -22,6 +22,9 @@ export const getEncuentrosByTorneo = async (req: Request, res: Response): Promis
               select: { nombre_completo: true, id: true }
             }
           }
+        },
+        torneos: {
+          select: { nombre: true, deporte_id: true }
         }
       },
       orderBy: { fecha_hora: 'asc' }
@@ -30,6 +33,35 @@ export const getEncuentrosByTorneo = async (req: Request, res: Response): Promis
     res.json(encuentros);
   } catch (error: any) {
     console.error('Error fetching encuentros:', error);
+    res.status(500).json({ error: 'Error interno del servidor al obtener encuentros' });
+  }
+};
+
+export const getAllEncuentros = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const encuentros = await prisma.encuentros.findMany({
+      include: {
+        torneos: { select: { nombre: true, deporte_id: true } },
+        competidores_encuentro: {
+          include: {
+            equipos: { 
+              include: {
+                municipios: {
+                  include: {
+                    departamento: true
+                  }
+                }
+              }
+            },
+            periodos_marcador: true, // Incluir resultados
+          }
+        }
+      },
+      orderBy: { fecha_hora: 'asc' }
+    });
+    res.json(encuentros);
+  } catch (error: any) {
+    console.error('Error fetching todos los encuentros:', error);
     res.status(500).json({ error: 'Error interno del servidor al obtener encuentros' });
   }
 };
