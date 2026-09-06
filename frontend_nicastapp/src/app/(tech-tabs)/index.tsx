@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert, Modal, Pressable, ScrollView } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -21,9 +21,11 @@ const COLORS = {
 
 export default function TechDashboard() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [user, setUser] = useState<any>(null);
   const [encuentros, setEncuentros] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showSwitcher, setShowSwitcher] = useState(false);
 
   const fetchEncuentros = async (userId: string) => {
     try {
@@ -135,8 +137,8 @@ export default function TechDashboard() {
           <Text style={styles.headerTitle}>Mesa Técnica</Text>
           <Text style={styles.headerSubtitle}>Tus partidos asignados</Text>
         </View>
-        <TouchableOpacity style={styles.profileBtn} onPress={() => router.push('/(tabs)/profile')}>
-          <Feather name="user" size={20} color={COLORS.tech} />
+        <TouchableOpacity style={styles.profileBtn} onPress={() => setShowSwitcher(true)}>
+          <Feather name="award" size={20} color={COLORS.tech} />
         </TouchableOpacity>
       </View>
 
@@ -161,6 +163,53 @@ export default function TechDashboard() {
           }
         />
       )}
+
+      {/* Account Switcher Modal (Bottom Sheet) */}
+      <Modal
+        visible={showSwitcher}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowSwitcher(false)}
+      >
+        <Pressable style={styles.modalOverlay} onPress={() => setShowSwitcher(false)}>
+          <Pressable style={[styles.bottomSheet, { paddingBottom: Math.max(insets.bottom, 24) }]} onPress={(e) => e.stopPropagation()}>
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>Cambiar de cuenta</Text>
+            
+            <ScrollView style={styles.accountsList}>
+              {/* Technical Account (Active) */}
+              <TouchableOpacity style={[styles.accountItem, styles.accountItemActive]} disabled>
+                <View style={[styles.accountAvatar, { backgroundColor: '#F3E8FF' }]}>
+                  <Feather name="award" size={20} color="#9333EA" />
+                </View>
+                <View style={styles.accountInfo}>
+                  <Text style={styles.accountName}>Mesa Técnica</Text>
+                  <Text style={styles.accountType}>Anotador / Juez</Text>
+                </View>
+                <Feather name="check-circle" size={24} color={COLORS.tech} />
+              </TouchableOpacity>
+
+              {/* Switch back to personal */}
+              <TouchableOpacity 
+                style={styles.accountItem} 
+                onPress={() => {
+                  setShowSwitcher(false);
+                  router.push('/(tabs)/profile');
+                }}
+              >
+                <View style={[styles.accountAvatar, { backgroundColor: '#F1F5F9' }]}>
+                  <Feather name="user" size={20} color="#0F3D91" />
+                </View>
+                <View style={styles.accountInfo}>
+                  <Text style={styles.accountName}>{user?.nombreCompleto || 'Mi Perfil Personal'}</Text>
+                  <Text style={styles.accountType}>Cuenta de usuario</Text>
+                </View>
+                <Feather name="chevron-right" size={20} color={COLORS.textLight} />
+              </TouchableOpacity>
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -197,5 +246,18 @@ const styles = StyleSheet.create({
   emptyState: { alignItems: 'center', marginTop: 60 },
   emptyIcon: { width: 80, height: 80, borderRadius: 40, backgroundColor: COLORS.techLight, justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: COLORS.textDark, marginBottom: 8 },
-  emptyDesc: { fontSize: 14, color: COLORS.textLight, textAlign: 'center', paddingHorizontal: 40 }
+  emptyDesc: { fontSize: 14, color: COLORS.textLight, textAlign: 'center', paddingHorizontal: 40 },
+  
+  // Bottom Sheet Styles
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.4)', justifyContent: 'flex-end' },
+  bottomSheet: { backgroundColor: COLORS.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: '85%' },
+  sheetHandle: { width: 40, height: 4, backgroundColor: '#E2E8F0', borderRadius: 2, alignSelf: 'center', marginBottom: 24 },
+  sheetTitle: { fontSize: 18, fontWeight: '700', color: COLORS.textDark, marginBottom: 16, textAlign: 'center' },
+  accountsList: { marginBottom: 16 },
+  accountItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.white, paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, marginBottom: 8 },
+  accountItemActive: { backgroundColor: '#F8FAFC', borderColor: COLORS.tech },
+  accountAvatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: COLORS.tech, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
+  accountInfo: { flex: 1, paddingRight: 8 },
+  accountName: { fontSize: 15, fontWeight: '600', color: COLORS.textDark, marginBottom: 2 },
+  accountType: { fontSize: 12, color: COLORS.textLight },
 });

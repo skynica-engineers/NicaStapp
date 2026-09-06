@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createOrganizacion, getMyOrganizaciones, getOrganizacionById, getAcreditacionesMesa, updateEstadoAcreditacion, getAllOrganizaciones, createAcreditacion } from '../controllers/organizacionesController';
+import { createOrganizacion, getMyOrganizaciones, getOrganizacionById, getAcreditacionesMesa, updateEstadoAcreditacion, getAllOrganizaciones, createAcreditacion, updateOrganizacion } from '../controllers/organizacionesController';
 
 const router = Router();
 
@@ -8,6 +8,7 @@ router.get('/', getAllOrganizaciones);
 router.get('/usuario/:userId', getMyOrganizaciones);
 // IMPORTANT: specific sub-routes MUST come before /:id to avoid Express catching them
 router.get('/:id', getOrganizacionById);
+router.put('/:id', updateOrganizacion);
 
 // Comunicados (REQ-ORG-05)
 import { getComunicados, createComunicado } from '../controllers/comunicadosController';

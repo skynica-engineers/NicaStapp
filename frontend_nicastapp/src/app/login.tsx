@@ -69,8 +69,9 @@ export default function LoginScreen() {
         
         if (errorMsg.includes('fetch failed') || errorMsg.includes('Network request failed') || errorMsg.includes('ConnectException')) {
           Alert.alert('Problema de conexión', 'No se pudo conectar al servidor. Verifica tu conexión a internet o intenta más tarde.');
-        } else if (errorMsg.includes('Credenciales') || errorMsg.includes('Usuario') || errorMsg.includes('Contraseña')) {
-          Alert.alert('Acceso denegado', 'Credenciales incorrectas. Verifica tu correo y contraseña.');
+        } else if (errorMsg.includes('Credenciales') || errorMsg.includes('Usuario') || errorMsg.includes('Contraseña') || errorMsg.includes('inválidas')) {
+          setEmailError('Credenciales incorrectas');
+          setPasswordError('Credenciales incorrectas');
         } else {
           Alert.alert('Error', errorMsg);
         }

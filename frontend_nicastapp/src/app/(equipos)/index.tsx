@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getEquiposByUsuario } from '../../services/api';
+import { Skeleton } from '../../components/SkeletonLoader';
 
 const COLORS = {
   primary: '#0F3D91',
@@ -22,24 +23,26 @@ export default function MisEquipos() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
 
-  useEffect(() => {
-    const fetchEquipos = async () => {
-      try {
-        const userData = await AsyncStorage.getItem('@user');
-        if (userData) {
-          const parsed = JSON.parse(userData);
-          setUser(parsed);
-          const response = await getEquiposByUsuario(parsed.id);
-          setEquipos(response);
+  useFocusEffect(
+    useCallback(() => {
+      const fetchEquipos = async () => {
+        try {
+          const userData = await AsyncStorage.getItem('@user');
+          if (userData) {
+            const parsed = JSON.parse(userData);
+            setUser(parsed);
+            const response = await getEquiposByUsuario(parsed.id);
+            setEquipos(response);
+          }
+        } catch (error) {
+          console.error('Error fetching equipos:', error);
+        } finally {
+          setLoading(false);
         }
-      } catch (error) {
-        console.error('Error fetching equipos:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchEquipos();
-  }, []);
+      };
+      fetchEquipos();
+    }, [])
+  );
 
   const renderEquipo = ({ item }: { item: any }) => (
     <TouchableOpacity 
@@ -76,8 +79,22 @@ export default function MisEquipos() {
       </View>
 
       {loading ? (
-        <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
+        <View style={styles.listContainer}>
+          {[1, 2, 3].map((i) => (
+            <View key={i} style={styles.card}>
+              <View style={styles.cardHeader}>
+                <Skeleton width={48} height={48} borderRadius={24} style={{ marginRight: 12 }} />
+                <View style={{ flex: 1 }}>
+                  <Skeleton width="60%" height={16} style={{ marginBottom: 6 }} />
+                  <Skeleton width="40%" height={12} />
+                </View>
+                <Skeleton width={20} height={20} borderRadius={10} />
+              </View>
+              <View style={[styles.cardFooter, { borderTopWidth: 1, borderTopColor: COLORS.border, paddingTop: 12, marginTop: 4 }]}>
+                <Skeleton width="70%" height={14} />
+              </View>
+            </View>
+          ))}
         </View>
       ) : (
         <FlatList

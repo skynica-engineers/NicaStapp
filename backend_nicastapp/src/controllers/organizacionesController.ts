@@ -40,6 +40,32 @@ export const createOrganizacion = async (req: Request, res: Response): Promise<v
   }
 };
 
+export const updateOrganizacion = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { nombre, tipo_institucion, municipio_id } = req.body;
+
+    if (!nombre || !tipo_institucion || !municipio_id) {
+      res.status(400).json({ error: 'Faltan campos obligatorios' });
+      return;
+    }
+
+    const organizacionActualizada = await prisma.organizaciones.update({
+      where: { id: String(id) },
+      data: {
+        nombre,
+        tipo_institucion,
+        municipio_id: Number(municipio_id)
+      }
+    });
+
+    res.status(200).json(organizacionActualizada);
+  } catch (error: any) {
+    console.error('Error updating organizacion:', error);
+    res.status(500).json({ error: 'Error interno del servidor al actualizar la organización' });
+  }
+};
+
 export const getMyOrganizaciones = async (req: Request, res: Response): Promise<void> => {
   const { userId } = req.params;
 

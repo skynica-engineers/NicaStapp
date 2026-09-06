@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, ReactNode, useContext } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter, useSegments } from 'expo-router';
+import { DeviceEventEmitter } from 'react-native';
 
 interface User {
   id: string;
@@ -53,6 +54,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     loadAuthData();
+  }, []);
+
+  // Escuchar eventos globales de sesión expirada
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener('onTokenExpired', () => {
+      logout();
+    });
+    return () => sub.remove();
   }, []);
 
   // Guardia de Rutas

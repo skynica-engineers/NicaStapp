@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { Picker } from '@react-native-picker/picker';
 import { apiCall } from '../services/api';
@@ -166,7 +167,11 @@ export default function RegisterScreen() {
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {/* Header */}
           <View style={styles.header}>
-            <Feather name="flag" size={32} color={COLORS.primary} style={styles.headerIcon} />
+            <Image
+              source={require('../../assets/images/LogoSinFondo.png')}
+              style={styles.logo}
+              contentFit="contain"
+            />
             <Text style={styles.title}>NICASTAPP</Text>
             <Text style={styles.subtitle}>Únete a la comunidad deportiva.</Text>
           </View>
@@ -337,9 +342,23 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.white },
   keyboardView: { flex: 1 },
   scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingVertical: 32, paddingBottom: 40 },
-  header: { alignItems: 'center', marginBottom: 32 },
-  headerIcon: { marginBottom: 12 },
-  title: { fontSize: 24, fontWeight: '800', color: COLORS.primary, marginBottom: 8, letterSpacing: 1 },
+  header: { 
+    alignItems: 'center', 
+    paddingHorizontal: 20,
+    marginBottom: 30, 
+  },
+  logo: {
+    width: 80,
+    height: 80,
+    marginBottom: 10,
+  },
+  title: { 
+    fontSize: 28, 
+    fontWeight: '800', 
+    color: COLORS.primary, 
+    marginBottom: 8, 
+    letterSpacing: 1 
+  },
   subtitle: { fontSize: 14, color: COLORS.textLight, textAlign: 'center' },
   form: { width: '100%' },
   inputGroup: { marginBottom: 16 },

@@ -5,6 +5,8 @@ import { Ionicons, Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format, isToday, isTomorrow, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { Skeleton } from '../../components/SkeletonLoader';
+import { useFavorites } from '../../context/FavoritesContext';
 
 const COLORS = {
   primary: '#0F3D91',
@@ -29,6 +31,7 @@ export default function CalendarScreen() {
   const [torneosUnicos, setTorneosUnicos] = useState<{id: string, nombre: string}[]>([]);
 
   const insets = useSafeAreaInsets();
+  const { isFavorite } = useFavorites();
 
   const loadData = async () => {
     try {
@@ -107,11 +110,21 @@ export default function CalendarScreen() {
     });
 
     // 2. Agrupar por día
+    const favGames: any[] = [];
     const groups: { [key: string]: any[] } = {};
+    
     filtered.forEach(item => {
-      const dateKey = format(parseISO(item.fecha_hora), 'yyyy-MM-dd');
-      if (!groups[dateKey]) groups[dateKey] = [];
-      groups[dateKey].push(item);
+      const local = item.competidores_encuentro?.find((c: any) => c.rol_posicion_etiqueta?.toLowerCase() === 'local');
+      const visitante = item.competidores_encuentro?.find((c: any) => c.rol_posicion_etiqueta?.toLowerCase() === 'visitante');
+      const isFavGame = isFavorite(local?.equipos?.id) || isFavorite(visitante?.equipos?.id);
+
+      if (isFavGame) {
+        favGames.push(item);
+      } else {
+        const dateKey = format(parseISO(item.fecha_hora), 'yyyy-MM-dd');
+        if (!groups[dateKey]) groups[dateKey] = [];
+        groups[dateKey].push(item);
+      }
     });
 
     // 3. Formatear para SectionList
@@ -121,6 +134,14 @@ export default function CalendarScreen() {
         title: getSectionTitle(groups[dateKey][0].fecha_hora),
         data: groups[dateKey]
       }));
+
+    if (favGames.length > 0) {
+      favGames.sort((a, b) => new Date(a.fecha_hora).getTime() - new Date(b.fecha_hora).getTime());
+      sections.unshift({
+        title: '⭐ Partidos de tus Equipos',
+        data: favGames
+      });
+    }
 
     return sections;
   };
@@ -165,7 +186,9 @@ export default function CalendarScreen() {
             <View style={styles.placeholderLogo}>
               <Text style={styles.logoText}>{localName.substring(0,2).toUpperCase()}</Text>
             </View>
-            <Text style={styles.teamName} numberOfLines={2}>{localName}</Text>
+            <Text style={styles.teamName} numberOfLines={2}>
+              {localName} {isFavorite(local?.equipos?.id) && <Ionicons name="star" size={12} color="#F59E0B" />}
+            </Text>
             {localCity ? <Text style={styles.cityText} numberOfLines={1}>{localCity}</Text> : null}
           </View>
 
@@ -186,7 +209,9 @@ export default function CalendarScreen() {
             <View style={styles.placeholderLogo}>
               <Text style={styles.logoText}>{visitanteName.substring(0,2).toUpperCase()}</Text>
             </View>
-            <Text style={styles.teamName} numberOfLines={2}>{visitanteName}</Text>
+            <Text style={styles.teamName} numberOfLines={2}>
+              {visitanteName} {isFavorite(visitante?.equipos?.id) && <Ionicons name="star" size={12} color="#F59E0B" />}
+            </Text>
             {visitanteCity ? <Text style={styles.cityText} numberOfLines={1}>{visitanteCity}</Text> : null}
           </View>
         </View>
@@ -203,8 +228,28 @@ export default function CalendarScreen() {
 
   if (loading) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Calendario</Text>
+          <View style={[styles.searchBar, { justifyContent: 'center' }]}>
+            <Skeleton width="80%" height={20} />
+          </View>
+          <View style={styles.filtersScroll}>
+            <View style={{ flexDirection: 'row' }}>
+              <Skeleton width={80} height={36} borderRadius={18} style={{ marginRight: 10 }} />
+              <Skeleton width={100} height={36} borderRadius={18} style={{ marginRight: 10 }} />
+              <Skeleton width={70} height={36} borderRadius={18} style={{ marginRight: 10 }} />
+            </View>
+          </View>
+        </View>
+        <View style={{ padding: 20 }}>
+          {[1, 2, 3].map((i) => (
+            <View key={i} style={{ marginBottom: 24 }}>
+              <Skeleton width={140} height={18} style={{ marginBottom: 12 }} />
+              <Skeleton width="100%" height={140} borderRadius={16} />
+            </View>
+          ))}
+        </View>
       </View>
     );
   }

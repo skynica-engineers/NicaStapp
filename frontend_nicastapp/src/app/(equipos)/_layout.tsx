@@ -14,17 +14,14 @@ export default function EquiposLayout() {
       <Stack.Screen 
         name="crear" 
         options={{ 
-          title: 'Crear Equipo',
-          headerShown: true,
-          headerBackTitle: 'Volver'
+          headerShown: false
         }} 
       />
       <Stack.Screen 
         name="[id]" 
         options={{ 
           title: 'Perfil del Equipo',
-          headerShown: true,
-          headerBackTitle: 'Volver'
+          headerShown: false,
         }} 
       />
     </Stack>

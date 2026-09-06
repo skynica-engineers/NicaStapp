@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Modal, TextInput, Alert, FlatList } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Skeleton } from '../../components/SkeletonLoader';
 import { getEquipoById, getEquipoRoster, addAtletaToRoster, removeAtletaFromRoster, searchPerfiles, getTorneosDisponibles, solicitarInscripcionTorneo, getTorneosInscritos, getSolicitudesVinculacion, resolverSolicitudVinculacion } from '../../services/api';
 import { router } from 'expo-router';
 
@@ -164,14 +166,61 @@ export default function EquipoDetalle() {
 
   if (loading && !equipo) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-      </View>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+            <Feather name="arrow-left" size={24} color={COLORS.text} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Perfil del Equipo</Text>
+        </View>
+        <ScrollView style={styles.container}>
+          <View style={styles.coverPhoto}>
+            <View style={styles.avatarContainer}>
+              <Skeleton width={82} height={82} borderRadius={41} />
+            </View>
+          </View>
+          <View style={styles.infoSection}>
+            <View style={{ alignItems: 'center', marginBottom: 16 }}>
+              <Skeleton width={200} height={28} style={{ marginBottom: 10 }} />
+              <Skeleton width={120} height={24} borderRadius={16} />
+            </View>
+            <View style={styles.detailRow}>
+              <Skeleton width={40} height={40} borderRadius={20} style={{ marginRight: 12 }} />
+              <View>
+                <Skeleton width={100} height={14} style={{ marginBottom: 4 }} />
+                <Skeleton width={150} height={16} />
+              </View>
+            </View>
+            <View style={[styles.rosterHeader, { marginTop: 24 }]}>
+              <Skeleton width={150} height={24} />
+              <Skeleton width={80} height={32} borderRadius={8} />
+            </View>
+            <View style={styles.rosterList}>
+              {[1, 2, 3].map(i => (
+                <View key={i} style={styles.rosterItem}>
+                  <Skeleton width={40} height={40} borderRadius={20} style={{ marginRight: 12 }} />
+                  <View style={styles.rosterInfo}>
+                    <Skeleton width={120} height={16} style={{ marginBottom: 4 }} />
+                    <Skeleton width={80} height={12} />
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
     );
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <Feather name="arrow-left" size={24} color={COLORS.text} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Perfil del Equipo</Text>
+      </View>
+      <ScrollView style={styles.container}>
       {/* Header / Portada */}
       <View style={styles.coverPhoto}>
         <View style={styles.avatarContainer}>
@@ -409,10 +458,15 @@ export default function EquipoDetalle() {
       </Modal>
 
     </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: COLORS.white },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16, backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.border },
+  backButton: { padding: 8, marginRight: 8, marginLeft: -8 },
+  headerTitle: { fontSize: 20, fontWeight: '800', color: COLORS.text },
   container: { flex: 1, backgroundColor: COLORS.background },
   centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   coverPhoto: { height: 120, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 20, position: 'relative' },

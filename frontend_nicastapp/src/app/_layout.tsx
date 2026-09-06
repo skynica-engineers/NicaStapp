@@ -6,6 +6,7 @@ import NetInfo from '@react-native-community/netinfo';
 import { OrgProvider } from '../context/OrgContext';
 import { AuthProvider } from '../context/AuthContext';
 import { syncService } from '../services/syncService';
+import { FavoritesProvider } from '../context/FavoritesContext';
 
 export default function Layout() {
   useEffect(() => {
@@ -25,14 +26,16 @@ export default function Layout() {
     <SafeAreaProvider>
       <AuthProvider>
         <OrgProvider>
-          <StatusBar style="dark" />
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="index" />
-            <Stack.Screen name="login" />
-            <Stack.Screen name="register" />
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="(org-tabs)" />
-          </Stack>
+          <FavoritesProvider>
+            <StatusBar style="dark" />
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="index" />
+              <Stack.Screen name="login" />
+              <Stack.Screen name="register" />
+              <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="(org-tabs)" />
+            </Stack>
+          </FavoritesProvider>
         </OrgProvider>
       </AuthProvider>
     </SafeAreaProvider>
