@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiCall } from '../../services/api';
 import { createEquipo, getComunidades } from '../../services/api';
+import { Skeleton } from '../../components/SkeletonLoader';
 
 const COLORS = {
   primary: '#0F3D91',
@@ -34,6 +36,7 @@ export default function CrearEquipo() {
   
   const [selectedDepto, setSelectedDepto] = useState('');
   const [selectedMunicipio, setSelectedMunicipio] = useState('');
+  const [isFetching, setIsFetching] = useState(true);
 
   useEffect(() => {
     const initData = async () => {
@@ -52,6 +55,8 @@ export default function CrearEquipo() {
         setDeportes(deportesRes);
       } catch (error) {
         console.error('Error loading initial data:', error);
+      } finally {
+        setIsFetching(false);
       }
     };
     initData();
@@ -103,7 +108,14 @@ export default function CrearEquipo() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <Feather name="arrow-left" size={24} color={COLORS.text} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Crear Equipo</Text>
+      </View>
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Información del Equipo</Text>
         
@@ -122,56 +134,71 @@ export default function CrearEquipo() {
 
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Disciplina Deportiva</Text>
-          <View style={styles.pickerContainer}>
-            <Picker
-              selectedValue={deporteId}
-              onValueChange={(itemValue) => setDeporteId(itemValue)}
-              style={styles.picker}
-            >
-              <Picker.Item label="Selecciona una disciplina..." value="" />
-              {deportes.map((dep: any) => (
-                <Picker.Item key={dep.id} label={dep.nombre} value={dep.id.toString()} />
-              ))}
-            </Picker>
-          </View>
+          {isFetching ? (
+            <Skeleton width="100%" height={50} borderRadius={12} />
+          ) : (
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={deporteId}
+                onValueChange={(itemValue) => setDeporteId(itemValue)}
+                style={styles.picker}
+              >
+                <Picker.Item label="Selecciona una disciplina..." value="" />
+                {deportes.map((dep: any) => (
+                  <Picker.Item key={dep.id} label={dep.nombre} value={dep.id.toString()} />
+                ))}
+              </Picker>
+            </View>
+          )}
         </View>
       </View>
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Sede (Ubicación)</Text>
         
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Departamento</Text>
-          <View style={styles.pickerContainer}>
-            <Picker
-              selectedValue={selectedDepto}
-              onValueChange={handleDeptoChange}
-              style={styles.picker}
-            >
-              <Picker.Item label="Selecciona un departamento..." value="" />
-              {departamentos.map((depto: any) => (
-                <Picker.Item key={depto.id} label={depto.nombre} value={depto.id.toString()} />
-              ))}
-            </Picker>
+        {isFetching ? (
+          <View style={styles.inputGroup}>
+            <Skeleton width={100} height={14} style={{ marginBottom: 8 }} />
+            <Skeleton width="100%" height={50} borderRadius={12} style={{ marginBottom: 16 }} />
+            <Skeleton width={100} height={14} style={{ marginBottom: 8 }} />
+            <Skeleton width="100%" height={50} borderRadius={12} />
           </View>
-        </View>
+        ) : (
+          <>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Departamento</Text>
+              <View style={styles.pickerContainer}>
+                <Picker
+                  selectedValue={selectedDepto}
+                  onValueChange={handleDeptoChange}
+                  style={styles.picker}
+                >
+                  <Picker.Item label="Selecciona un departamento..." value="" />
+                  {departamentos.map((depto: any) => (
+                    <Picker.Item key={depto.id} label={depto.nombre} value={depto.id.toString()} />
+                  ))}
+                </Picker>
+              </View>
+            </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Municipio</Text>
-          <View style={[styles.pickerContainer, !selectedDepto && styles.pickerDisabled]}>
-            <Picker
-              selectedValue={selectedMunicipio}
-              onValueChange={handleMunicipioChange}
-              style={styles.picker}
-              enabled={!!selectedDepto}
-            >
-              <Picker.Item label="Selecciona un municipio..." value="" />
-              {municipios.map((mun: any) => (
-                <Picker.Item key={mun.id} label={mun.nombre} value={mun.id.toString()} />
-              ))}
-            </Picker>
-          </View>
-        </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Municipio</Text>
+              <View style={[styles.pickerContainer, !selectedDepto && styles.pickerDisabled]}>
+                <Picker
+                  selectedValue={selectedMunicipio}
+                  onValueChange={handleMunicipioChange}
+                  style={styles.picker}
+                  enabled={!!selectedDepto}
+                >
+                  <Picker.Item label="Selecciona un municipio..." value="" />
+                  {municipios.map((mun: any) => (
+                    <Picker.Item key={mun.id} label={mun.nombre} value={mun.id.toString()} />
+                  ))}
+                </Picker>
+              </View>
+            </View>
+          </>
+        )}
       </View>
 
       <TouchableOpacity 
@@ -189,10 +216,34 @@ export default function CrearEquipo() {
         )}
       </TouchableOpacity>
     </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: COLORS.white,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  backButton: {
+    padding: 8,
+    marginRight: 8,
+    marginLeft: -8,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: COLORS.text,
+  },
   container: {
     flex: 1,
     backgroundColor: COLORS.background,

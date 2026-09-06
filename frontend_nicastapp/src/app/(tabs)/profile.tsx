@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Pressable,
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { DeviceEventEmitter } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { getMyOrganizaciones, getPerfil } from '../../services/api';
 import { useOrgContext } from '../../context/OrgContext';
@@ -80,15 +81,10 @@ export default function ProfileScreen() {
 
   const handleLogout = async () => {
     try {
-      await AsyncStorage.removeItem('@token');
-      await AsyncStorage.removeItem('@user');
       await AsyncStorage.removeItem('@active_org');
-      
-      router.replace('/login');
+      DeviceEventEmitter.emit('onTokenExpired');
     } catch (e) {
       console.error('Error logging out:', e);
-      // Fallback in case of error
-      router.replace('/login');
     }
   };
 

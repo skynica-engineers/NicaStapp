@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Pressable } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Pressable, Animated, DeviceEventEmitter } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -21,18 +21,50 @@ export default function OrgProfileScreen() {
   const { activeOrg, switchToPersonal } = useOrgContext();
   const insets = useSafeAreaInsets();
   const [showSwitcher, setShowSwitcher] = useState(false);
+  const [user, setUser] = useState<any>(null);
+
+  React.useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const storedUser = await AsyncStorage.getItem('@user');
+        if (storedUser) setUser(JSON.parse(storedUser));
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    fetchUser();
+  }, []);
+  const spinValue = React.useRef(new Animated.Value(0)).current;
+
+  const handleOpenSwitcher = () => {
+    Animated.sequence([
+      Animated.timing(spinValue, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(spinValue, {
+        toValue: 0,
+        duration: 0,
+        useNativeDriver: true,
+      })
+    ]).start(() => {
+      setShowSwitcher(true);
+    });
+  };
+
+  const spin = spinValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '180deg']
+  });
 
   const handleLogout = async () => {
     try {
-      await AsyncStorage.removeItem('@token');
-      await AsyncStorage.removeItem('@user');
       await AsyncStorage.removeItem('@active_org');
-      await switchToPersonal(); // This resets OrgContext
-      
-      router.replace('/login');
+      await switchToPersonal();
+      DeviceEventEmitter.emit('onTokenExpired');
     } catch (e) {
       console.error('Error logging out:', e);
-      router.replace('/login');
     }
   };
 
@@ -63,7 +95,7 @@ export default function OrgProfileScreen() {
         </View>
 
         {/* Profile Info with Switcher */}
-        <TouchableOpacity style={styles.profileHeader} onPress={() => setShowSwitcher(true)} activeOpacity={0.7}>
+        <View style={styles.profileHeader}>
           <View style={styles.avatar}>
             <Feather name="shield" size={28} color={COLORS.white} />
             <View style={styles.activeIndicator} />
@@ -72,20 +104,23 @@ export default function OrgProfileScreen() {
             <Text style={styles.name}>{activeOrg?.nombre || 'Organización'}</Text>
             <Text style={styles.email}>{activeOrg?.tipo_institucion || 'Perfil Organizativo'}</Text>
           </View>
-          <View style={styles.switchButton}>
-            <Feather name="repeat" size={16} color={COLORS.primary} />
-            <Text style={styles.switchText}>Cambiar</Text>
-          </View>
-        </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.switchButtonIcon} 
+            onPress={handleOpenSwitcher}
+            activeOpacity={0.7}
+          >
+            <Animated.View style={{ transform: [{ rotate: spin }] }}>
+              <Feather name="repeat" size={20} color={COLORS.primary} />
+            </Animated.View>
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Ajustes de Organización</Text>
           <Text style={styles.sectionDesc}>Gestiona la información y miembros de tu liga</Text>
           
           <View style={styles.actionsGrid}>
-            {renderActionCard('edit', 'Editar Información', 'Actualiza el nombre, logo y detalles')}
-            {renderActionCard('users', 'Miembros y Roles', 'Invita administradores o secretarios')}
-            {renderActionCard('credit-card', 'Planes y Facturación', 'Gestiona tu suscripción a la plataforma')}
+            {renderActionCard('edit', 'Editar Información', 'Actualiza el nombre, logo y detalles', () => router.push('/organizaciones/edit'))}
           </View>
         </View>
 
@@ -124,6 +159,26 @@ export default function OrgProfileScreen() {
                 <Feather name="check-circle" size={24} color={COLORS.primary} />
               </TouchableOpacity>
 
+              {/* Perfil Técnico */}
+              {user?.acreditaciones_mesa?.some((a: any) => a.estado_aprobacion === 'aprobado') && (
+                <TouchableOpacity 
+                  style={styles.accountItem}
+                  onPress={() => {
+                    setShowSwitcher(false);
+                    router.push('/(tech-tabs)');
+                  }}
+                >
+                  <View style={[styles.accountAvatar, { backgroundColor: '#F3E8FF' }]}>
+                    <Feather name="award" size={20} color="#9333EA" />
+                  </View>
+                  <View style={styles.accountInfo}>
+                    <Text style={styles.accountName}>Mesa Técnica</Text>
+                    <Text style={styles.accountType}>Anotador / Juez</Text>
+                  </View>
+                  <Feather name="chevron-right" size={20} color={COLORS.textLight} />
+                </TouchableOpacity>
+              )}
+
               {/* Switch back to personal */}
               <TouchableOpacity style={styles.accountItem} onPress={handleSwitchToPersonal}>
                 <View style={[styles.accountAvatar, { backgroundColor: '#F1F5F9' }]}>
@@ -160,8 +215,7 @@ const styles = StyleSheet.create({
   profileInfo: { flex: 1 },
   name: { fontSize: 18, fontWeight: '700', color: COLORS.textDark, marginBottom: 4 },
   email: { fontSize: 13, color: COLORS.textLight, fontWeight: '500' },
-  switchButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#EFF6FF', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, gap: 6 },
-  switchText: { fontSize: 13, fontWeight: '700', color: COLORS.primary },
+  switchButtonIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#EFF6FF', justifyContent: 'center', alignItems: 'center' },
 
   section: { paddingHorizontal: 20, marginBottom: 32 },
   sectionTitle: { fontSize: 18, fontWeight: '700', color: COLORS.textDark, marginBottom: 4 },

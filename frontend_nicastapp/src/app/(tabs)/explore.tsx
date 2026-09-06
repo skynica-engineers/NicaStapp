@@ -5,6 +5,7 @@ import { Feather, Ionicons } from '@expo/vector-icons';
 import { getTorneos, getAllEquipos, getAllOrganizaciones } from '../../services/api';
 import { Skeleton } from '../../components/SkeletonLoader';
 import { useRouter } from 'expo-router';
+import { useFavorites } from '../../context/FavoritesContext';
 
 const COLORS = {
   primary: '#0F3D91',
@@ -24,6 +25,7 @@ export default function ExploreScreen() {
   const [organizaciones, setOrganizaciones] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const { isFavorite, toggleFavorite } = useFavorites();
 
   const fetchExploreData = async () => {
     try {
@@ -63,7 +65,11 @@ export default function ExploreScreen() {
     e.nombre.toLowerCase().includes(q) || 
     e.municipios?.nombre?.toLowerCase().includes(q) ||
     e.deportes?.nombre?.toLowerCase().includes(q)
-  );
+  ).sort((a, b) => {
+    const aFav = isFavorite(a.id) ? 1 : 0;
+    const bFav = isFavorite(b.id) ? 1 : 0;
+    return bFav - aFav;
+  });
 
   const filteredOrgs = organizaciones.filter(o => 
     o.nombre.toLowerCase().includes(q) ||
@@ -134,7 +140,6 @@ export default function ExploreScreen() {
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <Text style={styles.sectionTitle}>Torneos Destacados</Text>
-                  <TouchableOpacity><Text style={styles.seeAll}>Ver todos</Text></TouchableOpacity>
                 </View>
                 {filteredTorneos.length === 0 ? (
                   <Text style={styles.noResultsText}>No hay torneos que coincidan</Text>
@@ -167,13 +172,22 @@ export default function ExploreScreen() {
                 ) : (
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScroll}>
                     {filteredEquipos.map(equipo => (
-                      <TouchableOpacity key={equipo.id} style={styles.equipoCard}>
-                        <View style={styles.equipoAvatar}>
+                      <View key={equipo.id} style={styles.equipoCard}>
+                        <TouchableOpacity style={styles.equipoAvatar} activeOpacity={0.7}>
                           <Text style={styles.equipoAvatarText}>{equipo.nombre.substring(0, 2).toUpperCase()}</Text>
-                        </View>
+                          <TouchableOpacity 
+                            style={styles.favoriteBadge} 
+                            onPress={() => toggleFavorite(equipo.id)}
+                            activeOpacity={0.7}
+                          >
+                            <Ionicons name={isFavorite(equipo.id) ? "star" : "star-outline"} size={14} color={isFavorite(equipo.id) ? "#F59E0B" : COLORS.textLight} />
+                          </TouchableOpacity>
+                        </TouchableOpacity>
                         <Text style={styles.equipoName} numberOfLines={1}>{equipo.nombre}</Text>
-                        <Text style={styles.equipoLocation} numberOfLines={1}>{equipo.municipios?.nombre || equipo.deportes?.nombre}</Text>
-                      </TouchableOpacity>
+                        <View style={styles.sportTag}>
+                          <Text style={styles.sportTagText}>{equipo.deportes?.nombre?.toUpperCase() || 'DEPORTE'}</Text>
+                        </View>
+                      </View>
                     ))}
                   </ScrollView>
                 )}
@@ -239,8 +253,11 @@ const styles = StyleSheet.create({
 
   equipoCard: { width: 100, alignItems: 'center' },
   equipoAvatar: { width: 72, height: 72, borderRadius: 36, backgroundColor: '#E2E8F0', justifyContent: 'center', alignItems: 'center', marginBottom: 8, borderWidth: 2, borderColor: COLORS.white, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
+  favoriteBadge: { position: 'absolute', top: -2, right: -2, backgroundColor: COLORS.white, borderRadius: 14, padding: 4, elevation: 2, shadowColor: '#000', shadowOffset: {width: 0, height: 1}, shadowOpacity: 0.2, shadowRadius: 1.41 },
   equipoAvatarText: { fontSize: 24, fontWeight: '800', color: COLORS.textDark },
-  equipoName: { fontSize: 14, fontWeight: '600', color: COLORS.textDark, textAlign: 'center', marginBottom: 2 },
+  equipoName: { fontSize: 13, fontWeight: '700', color: COLORS.textDark, textAlign: 'center', marginBottom: 4 },
+  sportTag: { backgroundColor: '#F1F5F9', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  sportTagText: { fontSize: 9, fontWeight: '800', color: COLORS.textLight },
   equipoLocation: { fontSize: 10, color: COLORS.textLight, textAlign: 'center' },
 
   orgCard: { width: 150, backgroundColor: COLORS.white, padding: 16, borderRadius: 16, borderWidth: 1, borderColor: COLORS.border },

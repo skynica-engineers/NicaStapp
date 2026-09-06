@@ -3,7 +3,8 @@ import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TextInput, Touch
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getTorneos, getTorneoTablas } from '../../services/api';
 import { Feather, Ionicons } from '@expo/vector-icons';
-
+import { Skeleton } from '../../components/SkeletonLoader';
+import { useFavorites } from '../../context/FavoritesContext';
 const COLORS = {
   primary: '#0F3D91',
   secondary: '#2563EB',
@@ -24,6 +25,7 @@ export default function StandingsScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const { isFavorite, toggleFavorite } = useFavorites();
 
   const fetchTorneos = async () => {
     try {
@@ -61,17 +63,15 @@ export default function StandingsScreen() {
 
   const calculateStandings = () => {
     if (!activeTorneoData?.encuentros) return [];
-
+    const isSoccer = activeTorneoData.deportes?.nombre?.toLowerCase().includes('fútbol') || activeTorneoData.deportes?.nombre?.toLowerCase().includes('futbol');
     const statsMap = new Map<string, any>();
 
-    // Inicializar o actualizar estadísticas por cada encuentro finalizado
     activeTorneoData.encuentros.forEach((encuentro: any) => {
       if (encuentro.estado_encuentro !== 'finalizado') return;
 
       const competidores = encuentro.competidores_encuentro || [];
       if (competidores.length !== 2) return;
 
-      // Calcular goles/puntos de cada uno
       const score0 = competidores[0].periodos_marcador?.reduce((acc: number, p: any) => acc + Number(p.puntos_acumulados || 0), 0) || 0;
       const score1 = competidores[1].periodos_marcador?.reduce((acc: number, p: any) => acc + Number(p.puntos_acumulados || 0), 0) || 0;
 
@@ -80,10 +80,9 @@ export default function StandingsScreen() {
 
       if (!team0 || !team1) return;
 
-      // Init in map if not exists
       [team0, team1].forEach((team) => {
         if (!statsMap.has(team.id)) {
-          statsMap.set(team.id, { id: team.id, nombre: team.nombre, jj: 0, jg: 0, jp: 0, je: 0, pts: 0 });
+          statsMap.set(team.id, { id: team.id, nombre: team.nombre, jj: 0, jg: 0, jp: 0, je: 0, pts: 0, pct: 0, jd: '-' });
         }
       });
 
@@ -102,7 +101,6 @@ export default function StandingsScreen() {
         stats1.pts += 3;
         stats0.jp += 1;
       } else {
-        // Empate
         stats0.je += 1;
         stats1.je += 1;
         stats0.pts += 1;
@@ -110,8 +108,32 @@ export default function StandingsScreen() {
       }
     });
 
-    // Convert to array and sort by Points
-    return Array.from(statsMap.values()).sort((a, b) => b.pts - a.pts);
+    let teams = Array.from(statsMap.values());
+    
+    if (isSoccer) {
+      teams.sort((a, b) => {
+        const favDiff = (isFavorite(b.id) ? 1 : 0) - (isFavorite(a.id) ? 1 : 0);
+        if (favDiff !== 0) return favDiff;
+        return b.pts - a.pts;
+      });
+    } else {
+      teams.forEach(t => t.pct = t.jj > 0 ? (t.jg / t.jj) : 0);
+      teams.sort((a, b) => {
+        const favDiff = (isFavorite(b.id) ? 1 : 0) - (isFavorite(a.id) ? 1 : 0);
+        if (favDiff !== 0) return favDiff;
+        return b.pct - a.pct;
+      });
+      
+      if (teams.length > 0) {
+        const leader = teams[0];
+        teams.forEach(t => {
+          const jd = ((leader.jg - t.jg) + (t.jp - leader.jp)) / 2;
+          t.jd = jd === 0 ? '-' : jd.toString();
+        });
+      }
+    }
+    
+    return teams;
   };
 
   // --- RENDERS ---
@@ -149,8 +171,17 @@ export default function StandingsScreen() {
         </View>
 
         {isLoading ? (
-          <View style={styles.loaderContainer}>
-            <ActivityIndicator size="large" color={COLORS.primary} />
+          <View style={{ padding: 16 }}>
+            {[1, 2, 3, 4, 5].map(i => (
+              <View key={i} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.white, padding: 16, borderRadius: 12, marginBottom: 12, borderWidth: 1, borderColor: COLORS.border }}>
+                <Skeleton width={48} height={48} borderRadius={24} style={{ marginRight: 16 }} />
+                <View style={{ flex: 1 }}>
+                  <Skeleton width="70%" height={16} style={{ marginBottom: 8 }} />
+                  <Skeleton width="50%" height={12} />
+                </View>
+                <Skeleton width={24} height={24} borderRadius={12} />
+              </View>
+            ))}
           </View>
         ) : (
           <ScrollView 
@@ -188,8 +219,26 @@ export default function StandingsScreen() {
   const renderDetailView = () => {
     if (isDetailLoading) {
       return (
-        <View style={styles.loaderContainer}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
+        <View style={styles.flex1}>
+          <View style={styles.detailHeader}>
+            <Skeleton width={24} height={24} borderRadius={12} />
+            <View style={{ flex: 1, paddingLeft: 12 }}>
+              <Skeleton width="50%" height={24} style={{ marginBottom: 4 }} />
+              <Skeleton width="30%" height={14} />
+            </View>
+          </View>
+          <View style={styles.tableWrapper}>
+            <View style={[styles.tableHeader, { justifyContent: 'center' }]}>
+              <Skeleton width="100%" height={20} />
+            </View>
+            <View style={{ paddingVertical: 8 }}>
+              {[1, 2, 3, 4, 5, 6].map(i => (
+                <View key={i} style={{ flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: COLORS.border }}>
+                   <Skeleton width="100%" height={20} />
+                </View>
+              ))}
+            </View>
+          </View>
         </View>
       );
     }
@@ -203,6 +252,7 @@ export default function StandingsScreen() {
     }
 
     const standings = calculateStandings();
+    const isSoccer = activeTorneoData.deportes?.nombre?.toLowerCase().includes('fútbol') || activeTorneoData.deportes?.nombre?.toLowerCase().includes('futbol');
 
     return (
       <View style={styles.flex1}>
@@ -230,20 +280,37 @@ export default function StandingsScreen() {
               <Text style={[styles.headerCell, styles.numCol]}>JJ</Text>
               <Text style={[styles.headerCell, styles.numCol]}>JG</Text>
               <Text style={[styles.headerCell, styles.numCol]}>JP</Text>
-              <Text style={[styles.headerCell, styles.numCol]}>JE</Text>
-              <Text style={[styles.headerCell, styles.ptsCol]}>PTS</Text>
+              {isSoccer && <Text style={[styles.headerCell, styles.numCol]}>JE</Text>}
+              {isSoccer && <Text style={[styles.headerCell, styles.ptsCol]}>PTS</Text>}
+              {!isSoccer && <Text style={[styles.headerCell, styles.ptsCol]}>PCT</Text>}
+              {!isSoccer && <Text style={[styles.headerCell, styles.numCol]}>JD</Text>}
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
               {standings.map((team, index) => (
                 <View key={team.id} style={[styles.tableRow, index % 2 === 0 && styles.tableRowAlt]}>
                   <Text style={[styles.rowCell, styles.posCol, styles.boldText]}>{index + 1}</Text>
-                  <Text style={[styles.rowCell, styles.teamCol, styles.boldText]} numberOfLines={1}>{team.nombre}</Text>
+                  <TouchableOpacity 
+                    style={[styles.rowCell, styles.teamCol, { flexDirection: 'row', alignItems: 'center' }]}
+                    onPress={() => toggleFavorite(team.id)}
+                  >
+                    <Ionicons 
+                      name={isFavorite(team.id) ? "star" : "star-outline"} 
+                      size={14} 
+                      color={isFavorite(team.id) ? "#F59E0B" : COLORS.textLight} 
+                      style={{ marginRight: 6 }} 
+                    />
+                    <Text style={[styles.boldText, { color: COLORS.textDark, flex: 1 }]} numberOfLines={1}>{team.nombre}</Text>
+                  </TouchableOpacity>
                   <Text style={[styles.rowCell, styles.numCol]}>{team.jj}</Text>
                   <Text style={[styles.rowCell, styles.numCol]}>{team.jg}</Text>
                   <Text style={[styles.rowCell, styles.numCol]}>{team.jp}</Text>
-                  <Text style={[styles.rowCell, styles.numCol]}>{team.je}</Text>
-                  <Text style={[styles.rowCell, styles.ptsCol, styles.boldPrimary]}>{team.pts}</Text>
+                  {isSoccer && <Text style={[styles.rowCell, styles.numCol]}>{team.je}</Text>}
+                  {isSoccer && <Text style={[styles.rowCell, styles.ptsCol, styles.boldPrimary]}>{team.pts}</Text>}
+                  {!isSoccer && <Text style={[styles.rowCell, styles.ptsCol, styles.boldPrimary]}>
+                    {team.pct.toFixed(3).replace(/^0\./, '.')}
+                  </Text>}
+                  {!isSoccer && <Text style={[styles.rowCell, styles.numCol]}>{team.jd}</Text>}
                 </View>
               ))}
             </ScrollView>

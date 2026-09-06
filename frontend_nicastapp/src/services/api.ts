@@ -1,9 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
+import { Platform, DeviceEventEmitter } from 'react-native';
 import { router } from 'expo-router';
 
-const LOCAL_IP = '192.168.123.33';
-const API_URL = `http://${LOCAL_IP}:3000/api`;
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api';
 
 export const apiCall = async (endpoint: string, method: string = 'GET', body?: any) => {
   const url = `${API_URL}${endpoint}`;
@@ -30,11 +29,12 @@ export const apiCall = async (endpoint: string, method: string = 'GET', body?: a
   const response = await fetch(url, options);
   const data = await response.json().catch(() => ({}));
 
-  if (response.status === 401) {
-    await AsyncStorage.removeItem('@token');
-    await AsyncStorage.removeItem('@user');
-    router.replace('/login');
-    throw new Error('Sesión expirada. Por favor, inicia sesión nuevamente.');
+  // Prevent login endpoint from triggering the generic session expired error
+  if (response.status === 401 && !endpoint.includes('/auth/login')) {
+    DeviceEventEmitter.emit('onTokenExpired');
+    // Return a promise that never resolves. Since we are navigating to /login immediately,
+    // this prevents the caller from throwing and logging an error that would show a RedBox.
+    return new Promise(() => {});
   }
 
   if (!response.ok) {
@@ -45,9 +45,7 @@ export const apiCall = async (endpoint: string, method: string = 'GET', body?: a
 
 export const getDeportes = async () => {
   try {
-    const response = await fetch(`${API_URL}/deportes`);
-    if (!response.ok) throw new Error('Error al obtener deportes');
-    return await response.json();
+    return await apiCall(`/deportes`);
   } catch (error) {
     console.error('getDeportes API Error:', error);
     return [];
@@ -56,9 +54,7 @@ export const getDeportes = async () => {
 
 export const getHomeFeed = async () => {
   try {
-    const response = await fetch(`${API_URL}/feed/home`);
-    if (!response.ok) throw new Error('Error al obtener el feed principal');
-    return await response.json();
+    return await apiCall(`/feed/home`);
   } catch (error) {
     console.error('getHomeFeed API Error:', error);
     return [];
@@ -67,9 +63,7 @@ export const getHomeFeed = async () => {
 
 export const getTorneos = async () => {
   try {
-    const response = await fetch(`${API_URL}/torneos`);
-    if (!response.ok) throw new Error('Error al obtener torneos');
-    return await response.json();
+    return await apiCall(`/torneos`);
   } catch (error) {
     console.error('getTorneos API Error:', error);
     return [];
@@ -78,9 +72,7 @@ export const getTorneos = async () => {
 
 export const getTorneoTablas = async (torneoId: string) => {
   try {
-    const response = await fetch(`${API_URL}/torneos/${torneoId}/tablas`);
-    if (!response.ok) throw new Error('Error al obtener tablas');
-    return await response.json();
+    return await apiCall(`/torneos/${torneoId}/tablas`);
   } catch (error) {
     console.error('getTorneoTablas API Error:', error);
     return null;
@@ -90,9 +82,7 @@ export const getTorneoTablas = async (torneoId: string) => {
 // --- Catálogos (Geografía) ---
 export const getDepartamentos = async () => {
   try {
-    const response = await fetch(`${API_URL}/catalog/departamentos`);
-    if (!response.ok) throw new Error('Error al obtener departamentos');
-    return await response.json();
+    return await apiCall(`/catalog/departamentos`);
   } catch (error) {
     console.error('getDepartamentos API Error:', error);
     return [];
@@ -101,9 +91,7 @@ export const getDepartamentos = async () => {
 
 export const getMunicipios = async (departamentoId: number) => {
   try {
-    const response = await fetch(`${API_URL}/catalog/municipios/${departamentoId}`);
-    if (!response.ok) throw new Error('Error al obtener municipios');
-    return await response.json();
+    return await apiCall(`/catalog/municipios/${departamentoId}`);
   } catch (error) {
     console.error('getMunicipios API Error:', error);
     return [];
@@ -115,11 +103,13 @@ export const createOrganizacion = async (data: any) => {
   return await apiCall('/organizaciones', 'POST', data);
 };
 
+export const updateOrganizacion = async (id: string, data: any) => {
+  return await apiCall(`/organizaciones/${id}`, 'PUT', data);
+};
+
 export const getMyOrganizaciones = async (userId: string) => {
   try {
-    const response = await fetch(`${API_URL}/organizaciones/usuario/${userId}`);
-    if (!response.ok) throw new Error('Error al obtener mis organizaciones');
-    return await response.json();
+    return await apiCall(`/organizaciones/usuario/${userId}`);
   } catch (error) {
     console.error('getMyOrganizaciones API Error:', error);
     return [];
@@ -128,9 +118,7 @@ export const getMyOrganizaciones = async (userId: string) => {
 
 export const getOrganizacionById = async (id: string) => {
   try {
-    const response = await fetch(`${API_URL}/organizaciones/${id}`);
-    if (!response.ok) throw new Error('Error al obtener organización');
-    return await response.json();
+    return await apiCall(`/organizaciones/${id}`);
   } catch (error) {
     console.error('getOrganizacionById API Error:', error);
     return null;
@@ -143,9 +131,7 @@ export const createTorneo = async (data: any) => {
 
 export const getAcreditacionesMesa = async (organizacionId: string) => {
   try {
-    const response = await fetch(`${API_URL}/organizaciones/${organizacionId}/acreditaciones`);
-    if (!response.ok) throw new Error('Error al obtener acreditaciones');
-    return await response.json();
+    return await apiCall(`/organizaciones/${organizacionId}/acreditaciones`);
   } catch (error) {
     console.error('getAcreditacionesMesa API Error:', error);
     return [];
@@ -158,9 +144,7 @@ export const updateEstadoAcreditacion = async (acreditacionId: string, estado: s
 
 export const getTorneoById = async (id: string) => {
   try {
-    const response = await fetch(`${API_URL}/torneos/${id}`);
-    if (!response.ok) throw new Error('Error al obtener torneo');
-    return await response.json();
+    return await apiCall(`/torneos/${id}`);
   } catch (error) {
     console.error('getTorneoById API Error:', error);
     return null;
@@ -173,9 +157,7 @@ export const getSolicitudesAcreditacionTorneo = async (torneoId: string, rol?: s
     if (rol) params.append('rol', rol);
     if (estado) params.append('estado', estado);
     const query = params.toString() ? `?${params.toString()}` : '';
-    const response = await fetch(`${API_URL}/torneos/${torneoId}/solicitudes${query}`);
-    if (!response.ok) throw new Error('Error al obtener solicitudes');
-    return await response.json();
+    return await apiCall(`/torneos/${torneoId}/solicitudes${query}`);
   } catch (error) {
     console.error('getSolicitudesAcreditacionTorneo API Error:', error);
     return [];
@@ -189,9 +171,7 @@ export const updateEstadoAcreditacionTorneo = async (torneoId: string, acreditac
 export const getEquiposTorneo = async (torneoId: string, estado?: string) => {
   try {
     const query = estado ? `?estado=${estado}` : '';
-    const response = await fetch(`${API_URL}/torneos/${torneoId}/equipos${query}`);
-    if (!response.ok) throw new Error('Error al obtener equipos');
-    return await response.json();
+    return await apiCall(`/torneos/${torneoId}/equipos${query}`);
   } catch (error) {
     console.error('getEquiposTorneo API Error:', error);
     return [];
@@ -208,23 +188,11 @@ export const updateEstadoInscripcionEquipo = async (torneoId: string, inscripcio
 
 export const getComunicados = async (orgId: string, torneoId?: string) => {
   const query = torneoId ? `?torneoId=${torneoId}` : '';
-  const response = await fetch(`${API_URL}/organizaciones/${orgId}/comunicados${query}`);
-  if (!response.ok) {
-    throw new Error('Error al obtener comunicados');
-  }
-  return response.json();
+  return await apiCall(`/organizaciones/${orgId}/comunicados${query}`);
 };
 
 export const createComunicado = async (orgId: string, data: { titulo: string, contenido: string, tipo_aviso: string, torneo_id?: string }) => {
-  const response = await fetch(`${API_URL}/organizaciones/${orgId}/comunicados`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-  if (!response.ok) {
-    throw new Error('Error al crear comunicado');
-  }
-  return response.json();
+  return await apiCall(`/organizaciones/${orgId}/comunicados`, 'POST', data);
 };
 
 // ==========================================
